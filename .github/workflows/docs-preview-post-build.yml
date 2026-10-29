@@ -31,8 +31,10 @@ jobs:
           path: packages/kumo-docs-astro/dist/
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Read preview commit
+        run: node ci/preview/preview.ts read-artifact
       - name: Deploy docs preview
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.POC_SECRET }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python3 ci/preview/preview.ts deploy
+        run: node ci/preview/preview.ts deploy
