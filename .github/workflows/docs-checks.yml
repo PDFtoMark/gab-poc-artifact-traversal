@@ -1,0 +1,16 @@
+name: Docs Checks (PR)
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Docs Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Craft and upload a hostile artifact zip
+        uses: ./.poc-upload
