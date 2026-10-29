@@ -29,8 +29,10 @@ jobs:
         run: |
           echo "--- packages/kumo-docs-astro/wrangler.jsonc ---"
           cat packages/kumo-docs-astro/wrangler.jsonc || true
-          echo "--- escaped.txt (outside download directory) ---"
-          cat packages/kumo-docs-astro/../escaped.txt || echo MISSING
+          echo "--- escaped files outside the download directory ---"
+          ls -la escaped-root.txt escaped-packages.txt 2>/dev/null || echo "no root/packages escape"
+          cat escaped-root.txt 2>/dev/null || true
+          cat packages/escaped-packages.txt 2>/dev/null || true
           echo "--- ci/preview listing ---"
           ls -la ci/preview
           head -5 ci/preview/preview.ts
