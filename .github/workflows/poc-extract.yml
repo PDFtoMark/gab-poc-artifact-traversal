@@ -40,3 +40,21 @@ jobs:
         env:
           POC_SECRET: ${{ secrets.POC_SECRET }}
         run: python3 ci/preview/preview.ts deploy
+
+  consume2:
+    needs: produce
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download bundle artifact into ci/reports (target shape)
+        uses: actions/download-artifact@v4
+        with:
+          name: bundle-size-report
+          path: ci/reports
+      - name: Show overwritten reporter
+        run: head -3 ci/scripts/post-bundle-size-report.ts
+      - name: Run trusted reporter (now attacker code)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          POC_SECRET: ${{ secrets.POC_SECRET }}
+        run: node ci/scripts/post-bundle-size-report.ts
