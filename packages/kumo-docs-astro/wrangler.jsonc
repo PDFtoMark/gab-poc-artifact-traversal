@@ -1,0 +1,4 @@
+{
+  "marker": "TRUSTED-MAIN-CONFIG",
+  "assets": { "directory": "./dist" }
+}
