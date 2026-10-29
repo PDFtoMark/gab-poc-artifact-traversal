@@ -1,0 +1,5 @@
+name: poc-upload
+description: craft and upload an arbitrary artifact zip
+runs:
+  using: node20
+  main: index.js
