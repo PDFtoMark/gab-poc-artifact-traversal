@@ -1,0 +1,39 @@
+name: Docs Preview (Post-Build)
+
+on:
+  workflow_run:
+    workflows: ["Docs Checks (PR)"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+
+jobs:
+  deploy:
+    name: Docs Deploy (Fork)
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name != github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout wrangler config from main
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            packages/kumo-docs-astro/wrangler.jsonc
+            ci/preview
+      - name: Download docs artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docs-preview-dist
+          path: packages/kumo-docs-astro/dist/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Deploy docs preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.POC_SECRET }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 ci/preview/preview.ts deploy
